@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fff3f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1d1226" media="(prefers-color-scheme: dark)">
+<title>Makeup Counter</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&%23128132;</text></svg>">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #fff3f8;
+    --bg-2: #f5eeff;
+    --surface: #ffffff;
+    --surface-2: #ffeaf3;
+    --border: #f7d6e6;
+    --text: #4b2c3d;
+    --text-dim: #a37f92;
+    --accent: #ff6fa8;
+    --accent-2: #b986f5;
+    --accent-soft: #ffe3ef;
+    --accent-text: #ffffff;
+    --danger: #d43d63;
+    --radius: 22px;
+    --shadow: 0 2px 0 rgba(255, 111, 168, .10), 0 10px 26px rgba(190, 120, 160, .16);
+    --shadow-sm: 0 1px 0 rgba(255, 111, 168, .10), 0 4px 12px rgba(190, 120, 160, .12);
+  }
+  @media (prefers-color-scheme: dark) {
+    .avatar {
+      background: hsl(var(--avatar-hue, 335) 32% 28%);
+      color: hsl(var(--avatar-hue, 335) 75% 84%);
+    }
+    :root {
+      --bg: #1d1226;
+      --bg-2: #241531;
+      --surface: #2a1a35;
+      --surface-2: #382243;
+      --border: #4a2d59;
+      --text: #f8e9f3;
+      --text-dim: #c3a3ba;
+      --accent: #ff8dbd;
+      --accent-2: #c9a0ff;
+      --accent-soft: #3d2247;
+      --accent-text: #2b0f22;
+      --danger: #ff8098;
+      --shadow: 0 2px 0 rgba(0, 0, 0, .25), 0 10px 26px rgba(0, 0, 0, .38);
+      --shadow-sm: 0 1px 0 rgba(0, 0, 0, .25), 0 4px 12px rgba(0, 0, 0, .3);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(120% 60% at 100% 0%, var(--bg-2) 0%, rgba(0, 0, 0, 0) 60%),
+      radial-gradient(90% 50% at 0% 100%, var(--accent-soft) 0%, rgba(0, 0, 0, 0) 55%);
+    background-attachment: fixed;
+    color: var(--text);
+    font: 16px/1.45 ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN",
+          "Segoe UI Variable Display", "Segoe UI", Quicksand, Nunito, -apple-system,
+          BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 18px 16px 56px; }
+
+  header.app { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  header.app h1 {
+    font-size: 25px;
+    margin: 0;
+    flex: 1;
+    letter-spacing: -.02em;
+    font-weight: 800;
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header.app h1 .wave { -webkit-text-fill-color: initial; color: initial; }
+  .tagline { margin: 0 0 14px 2px; color: var(--text-dim); font-size: 13px; }
+  .muted { color: var(--text-dim); }
+  .small { font-size: 13px; }
+
+  button {
+    font: inherit;
+    font-weight: 600;
+    color: inherit;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 14px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform .12s ease, background .15s ease, box-shadow .15s ease;
+  }
+  button:hover { background: var(--surface-2); }
+  button:active { transform: scale(.94); }
+  button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2.5px solid var(--accent-2);
+    outline-offset: 2px;
+  }
+  button.primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: var(--accent-text);
+    border-color: transparent;
+    box-shadow: var(--shadow-sm);
+  }
+  button.primary:hover { filter: brightness(1.05); }
+  button.ghost { background: transparent; }
+  button.danger { color: var(--danger); }
+  button[disabled] { opacity: .4; cursor: default; }
+  button[disabled]:active { transform: none; }
+
+  input[type="text"], select {
+    font: inherit;
+    color: inherit;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 10px 13px;
+    min-width: 0;
+  }
+  input[type="text"]::placeholder { color: var(--text-dim); }
+
+  /* Group tabs */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 2px 12px;
+    scrollbar-width: thin;
+  }
+  .tab {
+    white-space: nowrap;
+    padding: 8px 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: var(--shadow-sm);
+  }
+  .tab[aria-pressed="true"] {
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: var(--accent-text);
+    border-color: transparent;
+    font-weight: 700;
+  }
+  .tab[aria-pressed="true"]:hover { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .tab .star { font-size: 12px; }
+  .tab-new { border-style: dashed; color: var(--text-dim); box-shadow: none; }
+  .err { color: var(--danger); }
+
+  /* Range selector */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 2px 0 14px; }
+  .seg {
+    display: inline-flex;
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+  }
+  .seg button { border: 0; border-radius: 999px; padding: 6px 13px; background: transparent; font-size: 14px; box-shadow: none; }
+  .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .toolbar .spacer { flex: 1; }
+
+  /* Add form */
+  form.add { display: flex; gap: 8px; margin-bottom: 6px; }
+  form.add input[type="text"] { flex: 1; }
+  form.add select { max-width: 40%; border-radius: 999px; }
+  .add-hint { margin: 0 0 16px 4px; }
+
+  /* Product list */
+  ul.products { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  li.product {
+    position: relative;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 12px 12px 14px;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  li.product:hover { transform: translateY(-2px); }
+  .avatar {
+    width: 42px; height: 42px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 21px;
+    font-weight: 700;
+    background: hsl(var(--avatar-hue, 335) 80% 93%);
+    color: hsl(var(--avatar-hue, 335) 45% 40%);
+    user-select: none;
+  }
+  .p-main { flex: 1; min-width: 0; }
+  .p-name { font-weight: 700; overflow-wrap: anywhere; letter-spacing: -.01em; }
+  .p-meta { font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+  .p-count {
+    font-variant-numeric: tabular-nums;
+    font-size: 22px;
+    font-weight: 800;
+    min-width: 2.4ch;
+    text-align: center;
+    letter-spacing: -.02em;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 14px;
+    padding: 3px 10px;
+  }
+  .p-count.zero { color: var(--text-dim); background: transparent; }
+  .p-actions { display: flex; gap: 8px; align-items: center; }
+  .tally {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    font-size: 20px; font-weight: 800; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(255, 111, 168, .35);
+  }
+  .minus {
+    width: 38px; height: 38px; font-size: 20px; border-radius: 50%; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--text-dim); box-shadow: none;
+  }
+  .kebab {
+    width: 34px; height: 34px; padding: 0; border-radius: 50%;
+    background: transparent; border-color: transparent; color: var(--text-dim);
+    font-size: 18px; box-shadow: none;
+  }
+  .kebab:hover { background: var(--surface-2); }
+
+  .sparkle {
+    position: absolute;
+    right: 76px;
+    top: 50%;
+    font-size: 18px;
+    pointer-events: none;
+    animation: floatUp .8s ease-out forwards;
+  }
+  @keyframes floatUp {
+    0% { opacity: 0; transform: translateY(0) scale(.6) rotate(-8deg); }
+    25% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-46px) scale(1.15) rotate(10deg); }
+  }
+  .p-count.pop { animation: pop .38s cubic-bezier(.34, 1.56, .64, 1); }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.32); }
+    100% { transform: scale(1); }
+  }
+
+  .empty {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--text-dim);
+    line-height: 1.7;
+  }
+  .empty .big { display: block; font-size: 30px; margin-bottom: 6px; }
+
+  /* Dialogs */
+  dialog {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    padding: 0;
+    width: min(460px, calc(100vw - 32px));
+    box-shadow: var(--shadow);
+  }
+  dialog::backdrop { background: rgba(75, 44, 61, .45); backdrop-filter: blur(2px); }
+  .dlg-body { padding: 20px; display: grid; gap: 14px; }
+  .dlg-body h2 { margin: 0; font-size: 18px; letter-spacing: -.01em; }
+  .field { display: grid; gap: 6px; }
+  .field label { font-size: 13px; color: var(--text-dim); font-weight: 600; }
+  .row { display: flex; gap: 8px; }
+  .row > * { flex: 1; }
+  .dlg-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .dlg-actions .left { margin-right: auto; }
+  .group-list { display: grid; gap: 8px; max-height: 40vh; overflow: auto; }
+  .group-row {
+    display: flex; align-items: center; gap: 8px;
+    border: 1.5px solid var(--border); border-radius: 16px; padding: 6px 6px 6px 14px;
+    background: var(--surface);
+  }
+  .group-row .name { flex: 1; overflow-wrap: anywhere; font-weight: 600; }
+  .group-row button { font-size: 13px; padding: 6px 11px; }
+  .badge {
+    font-size: 11px; letter-spacing: .03em; font-weight: 700;
+    color: var(--accent-text); background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    border-radius: 999px; padding: 3px 10px;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(20px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow);
+    border-radius: 999px;
+    padding: 9px 10px 9px 18px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 20;
+    animation: riseIn .25s ease-out;
+  }
+  .toast[hidden] { display: none; }
+  .toast button { font-size: 13px; padding: 6px 13px; }
+  @keyframes riseIn {
+    from { opacity: 0; transform: translate(-50%, 12px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    li.product:hover { transform: none; }
+    button:active { transform: none; }
+  }
+
+  @media (max-width: 520px) {
+    form.add { flex-wrap: wrap; }
+    form.add select { max-width: none; flex: 1; }
+    header.app h1 { font-size: 22px; }
+    .p-count { font-size: 20px; }
+    .sparkle { right: 70px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="app">
+    <h1><span class="wave">💄</span> Makeup Counter</h1>
+    <button id="btn-groups" type="button">Groups</button>
+    <button id="btn-settings" type="button" title="Settings" aria-label="Settings">&#9881;</button>
+  </header>
+
+  <p class="tagline">Tap a product every time you use it.</p>
+
+  <nav class="tabs" id="tabs" aria-label="Product groups"></nav>
+
+  <form class="add" id="add-form" autocomplete="off">
+    <input type="text" id="add-name" placeholder="Product name" aria-label="Product name"
+           aria-describedby="add-hint" maxlength="300" required>
+    <select id="add-group" aria-label="Group"></select>
+    <button class="primary" type="submit">Add</button>
+  </form>
+  <p class="small muted add-hint" id="add-hint">Adding several? Separate them with commas.</p>
+
+  <div class="toolbar">
+    <div class="seg" id="range" role="group" aria-label="Count range">
+      <button type="button" data-range="today" aria-pressed="true">Today</button>
+      <button type="button" data-range="week" aria-pressed="false">7 days</button>
+      <button type="button" data-range="month" aria-pressed="false">30 days</button>
+      <button type="button" data-range="all" aria-pressed="false">All time</button>
+    </div>
+    <span class="spacer"></span>
+    <span class="small muted" id="summary"></span>
+  </div>
+
+  <ul class="products" id="products"></ul>
+  <div class="empty" id="empty" hidden></div>
+</div>
+
+<div class="toast" id="toast" hidden>
+  <span id="toast-text"></span>
+  <button type="button" id="toast-undo">Undo</button>
+</div>
+
+<!-- Groups dialog -->
+<dialog id="dlg-groups">
+  <form method="dialog" class="dlg-body">
+    <h2>Groups</h2>
+    <p class="small muted" style="margin:-6px 0 0">
+      The default group is preselected when the app opens and when you add a product.
+    </p>
+    <div class="group-list" id="group-list"></div>
+    <div class="row">
+      <input type="text" id="new-group" placeholder="New group name" aria-label="New group name" maxlength="40">
+      <button type="button" id="add-group-btn" style="flex:0 0 auto">Add group</button>
+    </div>
+    <div class="dlg-actions">
+      <button value="close">Done</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- New group dialog -->
+<dialog id="dlg-newgroup">
+  <form method="dialog" class="dlg-body">
+    <h2>New group</h2>
+    <div class="field">
+      <label for="newgroup-name">Group name</label>
+      <input type="text" id="newgroup-name" maxlength="40" placeholder="e.g. Daily drivers">
+      <span class="small err" id="newgroup-error" hidden></span>
+    </div>
+    <div class="dlg-actions">
+      <button value="cancel" class="ghost">Cancel</button>
+      <button type="button" class="primary" id="newgroup-create">Create</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Product edit dialog -->
+<dialog id="dlg-product">
+  <form method="dialog" class="dlg-body">
+    <h2 id="dlg-product-title">Edit product</h2>
+    <div class="field">
+      <label for="edit-name">Name</label>
+      <input type="text" id="edit-name" maxlength="80">
+    </div>
+    <div class="field">
+      <label for="edit-icon">Icon (emoji, optional)</label>
+      <input type="text" id="edit-icon" maxlength="4" placeholder="Leave empty to pick one for you">
+    </div>
+    <div class="field">
+      <label for="edit-group">Group</label>
+      <select id="edit-group"></select>
+    </div>
+    <div class="field">
+      <label for="edit-count">Total uses (all time)</label>
+      <input type="text" id="edit-count" inputmode="numeric" readonly>
+    </div>
+    <div class="dlg-actions">
+      <button type="button" class="ghost danger left" id="edit-delete">Delete</button>
+      <button value="cancel" class="ghost">Cancel</button>
+      <button type="button" class="primary" id="edit-save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Settings dialog -->
+<dialog id="dlg-settings">
+  <form method="dialog" class="dlg-body">
+    <h2>Settings</h2>
+    <div class="field">
+      <label for="default-group">Default group</label>
+      <select id="default-group"></select>
+    </div>
+    <div class="field">
+      <label>Data</label>
+      <div class="row">
+        <button type="button" id="btn-export">Export JSON</button>
+        <button type="button" id="btn-import">Import JSON</button>
+      </div>
+      <input type="file" id="import-file" accept="application/json,.json" hidden>
+    </div>
+    <div class="field">
+      <label>Danger zone</label>
+      <div class="row">
+        <button type="button" class="danger" id="btn-reset-counts">Reset all counts</button>
+        <button type="button" class="danger" id="btn-reset-all">Erase everything</button>
+      </div>
+    </div>
+    <p class="small muted" style="margin:0">
+      Everything is stored in this browser only &mdash; nothing is uploaded. Export to move your data.
+    </p>
+    <div class="dlg-actions">
+      <button value="close">Done</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "makeup-counter-v1";
+  var ALL = " all"; // sentinel tab id, cannot collide with a group name
+  var NEW_GROUP = " new"; // sentinel <option> value for "create a group"
+  var UNDO_MS = 6000;
+
+  /* ---------- state ---------- */
+
+  var state = load();
+  var view = { range: "today", tab: null, addGroup: null };
+  var lastAction = null;
+  var toastTimer = null;
+  var popId = null;
+  var sparkleIndex = 0;
+
+  function defaults() {
+    return {
+      version: 1,
+      groups: ["Daily drivers", "Occasional"],
+      defaultGroup: "Daily drivers",
+      products: []
+    };
+  }
+
+  function load() {
+    var raw;
+    try {
+      raw = window.localStorage.getItem(STORAGE_KEY);
+    } catch (err) {
+      return defaults();
+    }
+    if (!raw) return defaults();
+    try {
+      return normalize(JSON.parse(raw));
+    } catch (err) {
+      return defaults();
+    }
+  }
+
+  function normalize(data) {
+    var base = defaults();
+    if (!data || typeof data !== "object") return base;
+
+    var groups = [];
+    if (Array.isArray(data.groups)) {
+      data.groups.forEach(function (g) {
+        if (typeof g === "string" && g.trim() && groups.indexOf(g.trim()) === -1) groups.push(g.trim());
+      });
+    }
+
+    var products = [];
+    if (Array.isArray(data.products)) {
+      data.products.forEach(function (p) {
+        if (!p || typeof p !== "object") return;
+        var name = typeof p.name === "string" ? p.name.trim() : "";
+        if (!name) return;
+        var group = typeof p.group === "string" && p.group.trim() ? p.group.trim() : null;
+        var counts = {};
+        if (p.counts && typeof p.counts === "object") {
+          Object.keys(p.counts).forEach(function (day) {
+            var n = Math.floor(Number(p.counts[day]));
+            if (/^\d{4}-\d{2}-\d{2}$/.test(day) && isFinite(n) && n > 0) counts[day] = n;
+          });
+        }
+        if (group && groups.indexOf(group) === -1) groups.push(group);
+        products.push({
+          id: typeof p.id === "string" && p.id ? p.id : uid(),
+          name: name,
+          group: group,
+          icon: typeof p.icon === "string" ? p.icon.trim().slice(0, 4) : "",
+          counts: counts
+        });
+      });
+    }
+
+    if (!groups.length) groups = base.groups.slice();
+    products.forEach(function (p) { if (!p.group) p.group = groups[0]; });
+
+    var def = typeof data.defaultGroup === "string" ? data.defaultGroup.trim() : "";
+    if (groups.indexOf(def) === -1) def = groups[0];
+
+    return { version: 1, groups: groups, defaultGroup: def, products: products };
+  }
+
+  function save() {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (err) {
+      /* storage full or blocked (e.g. private mode); the session still works in memory */
+    }
+  }
+
+  function uid() {
+    return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  }
+
+  /* ---------- dates ---------- */
+
+  function dayKey(date) {
+    var d = date || new Date();
+    var m = String(d.getMonth() + 1).padStart(2, "0");
+    var day = String(d.getDate()).padStart(2, "0");
+    return d.getFullYear() + "-" + m + "-" + day;
+  }
+
+  // Inclusive list of the last `n` local day keys, ending today.
+  function recentDays(n) {
+    var out = [];
+    var d = new Date();
+    d.setHours(12, 0, 0, 0); // midday avoids DST edges when stepping back
+    for (var i = 0; i < n; i++) {
+      out.push(dayKey(d));
+      d.setDate(d.getDate() - 1);
+    }
+    return out;
+  }
+
+  function countFor(product, range) {
+    var total = 0;
+    var day;
+    if (range === "all") {
+      for (day in product.counts) {
+        if (Object.prototype.hasOwnProperty.call(product.counts, day)) total += product.counts[day];
+      }
+      return total;
+    }
+    var days = range === "today" ? recentDays(1) : recentDays(range === "week" ? 7 : 30);
+    days.forEach(function (key) { total += product.counts[key] || 0; });
+    return total;
+  }
+
+  /* ---------- mutations ---------- */
+
+  function tally(product, delta) {
+    var key = dayKey();
+    var current = product.counts[key] || 0;
+    var next = current + delta;
+    if (next < 0) return false; // never go below zero for a given day
+    if (next === 0) delete product.counts[key];
+    else product.counts[key] = next;
+    save();
+    return true;
+  }
+
+  function renameGroup(oldName, newName) {
+    var i = state.groups.indexOf(oldName);
+    if (i === -1) return;
+    state.groups[i] = newName;
+    state.products.forEach(function (p) { if (p.group === oldName) p.group = newName; });
+    if (state.defaultGroup === oldName) state.defaultGroup = newName;
+    if (view.tab === oldName) view.tab = newName;
+    if (view.addGroup === oldName) view.addGroup = newName;
+    save();
+  }
+
+  function deleteGroup(name) {
+    if (state.groups.length <= 1) return;
+    var fallback = state.groups.filter(function (g) { return g !== name; })[0];
+    state.groups = state.groups.filter(function (g) { return g !== name; });
+    state.products.forEach(function (p) { if (p.group === name) p.group = fallback; });
+    if (state.defaultGroup === name) state.defaultGroup = fallback;
+    if (view.tab === name) view.tab = fallback;
+    if (view.addGroup === name) view.addGroup = null;
+    save();
+  }
+
+  /* ---------- rendering ---------- */
+
+  var el = {
+    tabs: document.getElementById("tabs"),
+    products: document.getElementById("products"),
+    empty: document.getElementById("empty"),
+    summary: document.getElementById("summary"),
+    addForm: document.getElementById("add-form"),
+    addName: document.getElementById("add-name"),
+    addGroup: document.getElementById("add-group"),
+    range: document.getElementById("range"),
+    toast: document.getElementById("toast"),
+    toastText: document.getElementById("toast-text"),
+    toastUndo: document.getElementById("toast-undo")
+  };
+
+  var RANGE_LABEL = { today: "today", week: "last 7 days", month: "last 30 days", all: "all time" };
+
+  function visibleProducts() {
+    if (view.tab === ALL) return state.products.slice();
+    return state.products.filter(function (p) { return p.group === view.tab; });
+  }
+
+  function render() {
+    renderTabs();
+    renderGroupSelect(el.addGroup, addGroupValue(), true);
+    renderProducts();
+  }
+
+  function currentAddGroup() {
+    return view.tab === ALL ? state.defaultGroup : view.tab;
+  }
+
+  // Which group the add form is targeting: an explicit pick, else the active tab.
+  function addGroupValue() {
+    if (view.addGroup && state.groups.indexOf(view.addGroup) !== -1) return view.addGroup;
+    return currentAddGroup();
+  }
+
+  function renderTabs() {
+    el.tabs.textContent = "";
+    var items = [{ id: ALL, label: "All" }].concat(state.groups.map(function (g) {
+      return { id: g, label: g };
+    }));
+    items.forEach(function (item) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "tab";
+      b.setAttribute("aria-pressed", String(item.id === view.tab));
+      b.textContent = item.label;
+      if (item.id !== ALL && item.id === state.defaultGroup) {
+        var star = document.createElement("span");
+        star.className = "star";
+        star.textContent = "★";
+        star.title = "Default group";
+        b.appendChild(star);
+      }
+      b.addEventListener("click", function () {
+        view.tab = item.id;
+        view.addGroup = null; // the add form follows the tab again
+        render();
+      });
+      el.tabs.appendChild(b);
+    });
+
+    var add = document.createElement("button");
+    add.type = "button";
+    add.className = "tab tab-new";
+    add.id = "tab-new-group";
+    add.textContent = "＋ Group";
+    add.title = "Create a group";
+    add.addEventListener("click", function () {
+      openNewGroup(function (name) {
+        if (!name) return;
+        view.tab = name;
+        view.addGroup = null;
+        render();
+        el.addName.focus();
+      });
+    });
+    el.tabs.appendChild(add);
+  }
+
+  function renderGroupSelect(select, selected, allowNew) {
+    select.textContent = "";
+    state.groups.forEach(function (g) {
+      var opt = document.createElement("option");
+      opt.value = g;
+      opt.textContent = g + (g === state.defaultGroup ? " ★" : "");
+      if (g === selected) opt.selected = true;
+      select.appendChild(opt);
+    });
+    if (allowNew) {
+      var newOpt = document.createElement("option");
+      newOpt.value = NEW_GROUP;
+      newOpt.textContent = "＋ New group…";
+      select.appendChild(newOpt);
+    }
+  }
+
+  function renderProducts() {
+    var list = visibleProducts();
+    list.sort(function (a, b) {
+      var diff = countFor(b, view.range) - countFor(a, view.range);
+      if (diff !== 0) return diff;
+      return a.name.localeCompare(b.name);
+    });
+
+    el.products.textContent = "";
+    list.forEach(function (p) { el.products.appendChild(productRow(p)); });
+
+    var total = list.reduce(function (sum, p) { return sum + countFor(p, view.range); }, 0);
+    el.summary.textContent = list.length
+      ? total + (total === 1 ? " use " : " uses ") + RANGE_LABEL[view.range] +
+        " across " + list.length + (list.length === 1 ? " product" : " products")
+      : "";
+
+    if (list.length) {
+      el.empty.hidden = true;
+    } else {
+      el.empty.hidden = false;
+      el.empty.textContent = "";
+      var face = document.createElement("span");
+      face.className = "big";
+      face.textContent = state.products.length ? "🧺" : "💕";
+      el.empty.appendChild(face);
+      el.empty.appendChild(document.createTextNode(state.products.length
+        ? "Nothing in “" + (view.tab === ALL ? "this view" : view.tab) + "” yet."
+        : "Add your first product above and start tapping!"));
+    }
+  }
+
+  // A product shows its own emoji if it has one, else a guess from its name,
+  // else its first letter on a colour derived from the name.
+  var ICON_HINTS = [
+    [/lip|gloss|balm|stain/, "💋"],
+    [/mascara|lash/, "👁️"],
+    [/brow/, "✏️"],
+    [/blush|cheek/, "🌸"],
+    [/shadow|palette|pigment/, "🎨"],
+    [/liner|kohl/, "🖊️"],
+    [/highlight|glitter|shimmer|glow/, "✨"],
+    [/nail|polish|top ?coat|manicure/, "💅"],
+    [/perfume|scent|fragrance|mist/, "🌷"],
+    [/foundation|concealer|tint|primer|powder|setting|bronzer|contour/, "🧴"],
+    [/serum|cream|moistur|lotion|oil|spf|sunscreen|retinol/, "🧴"],
+    [/cleanser|wash|soap|micellar|toner/, "🧼"],
+    [/mask|patch/, "🧖"],
+    [/hair|shampoo|conditioner|dry ?shampoo/, "💇"],
+    [/brush|sponge|blender/, "🖌️"],
+    [/tooth|floss|deodorant/, "🪥"]
+  ];
+
+  function guessIcon(name) {
+    var lower = name.toLowerCase();
+    for (var i = 0; i < ICON_HINTS.length; i++) {
+      if (ICON_HINTS[i][0].test(lower)) return ICON_HINTS[i][1];
+    }
+    return "";
+  }
+
+  function hueFor(name) {
+    var hash = 0;
+    for (var i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) % 360;
+    return hash;
+  }
+
+  function avatarFor(p) {
+    var span = document.createElement("span");
+    span.className = "avatar";
+    span.setAttribute("aria-hidden", "true");
+    var icon = p.icon || guessIcon(p.name);
+    if (icon) {
+      span.textContent = icon;
+    } else {
+      span.textContent = p.name.trim().charAt(0).toUpperCase();
+      span.style.setProperty("--avatar-hue", String(hueFor(p.name)));
+    }
+    return span;
+  }
+
+  var SPARKLES = ["✨", "💖", "🌸", "💫", "🫧"];
+
+  function sparkle(productId) {
+    var row = el.products.querySelector('li.product[data-id="' + productId + '"]');
+    if (!row) return;
+    var s = document.createElement("span");
+    s.className = "sparkle";
+    s.setAttribute("aria-hidden", "true");
+    s.textContent = SPARKLES[sparkleIndex++ % SPARKLES.length];
+    s.addEventListener("animationend", function () { s.remove(); });
+    row.appendChild(s);
+  }
+
+  function productRow(p) {
+    var li = document.createElement("li");
+    li.className = "product";
+    li.setAttribute("data-id", p.id);
+
+    li.appendChild(avatarFor(p));
+
+    var main = document.createElement("div");
+    main.className = "p-main";
+    var name = document.createElement("div");
+    name.className = "p-name";
+    name.textContent = p.name;
+    var meta = document.createElement("div");
+    meta.className = "p-meta";
+    var allTime = countFor(p, "all");
+    // The group is only worth repeating when the list isn't already one group.
+    meta.textContent = (view.tab === ALL ? p.group + " · " : "") + allTime + " all time";
+    main.appendChild(name);
+    main.appendChild(meta);
+
+    var shown = countFor(p, view.range);
+    var count = document.createElement("div");
+    count.className = "p-count" + (shown ? "" : " zero") + (p.id === popId ? " pop" : "");
+    count.textContent = String(shown);
+    count.title = RANGE_LABEL[view.range];
+
+    var actions = document.createElement("div");
+    actions.className = "p-actions";
+
+    var minus = document.createElement("button");
+    minus.type = "button";
+    minus.className = "minus";
+    minus.textContent = "−";
+    minus.setAttribute("aria-label", "Remove one use of " + p.name + " (today)");
+    minus.disabled = !(p.counts[dayKey()] > 0);
+    minus.addEventListener("click", function () {
+      if (tally(p, -1)) {
+        lastAction = null;
+        hideToast();
+        renderProducts();
+      }
+    });
+
+    var plus = document.createElement("button");
+    plus.type = "button";
+    plus.className = "tally primary";
+    plus.textContent = "+1";
+    plus.setAttribute("aria-label", "Tally one use of " + p.name);
+    plus.addEventListener("click", function () {
+      tally(p, 1);
+      popId = p.id;
+      renderProducts();
+      popId = null;
+      sparkle(p.id);
+      offerUndo(p);
+    });
+
+    var kebab = document.createElement("button");
+    kebab.type = "button";
+    kebab.className = "kebab";
+    kebab.textContent = "⋯";
+    kebab.setAttribute("aria-label", "Edit " + p.name);
+    kebab.addEventListener("click", function () { openProductDialog(p); });
+
+    actions.appendChild(minus);
+    actions.appendChild(plus);
+    actions.appendChild(kebab);
+
+    li.appendChild(main);
+    li.appendChild(count);
+    li.appendChild(actions);
+    return li;
+  }
+
+  /* ---------- toast / undo ---------- */
+
+  function showToast(text, undoable) {
+    el.toastText.textContent = text;
+    el.toastUndo.hidden = !undoable;
+    el.toast.hidden = false;
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(hideToast, UNDO_MS);
+  }
+
+  function offerUndo(p) {
+    lastAction = { productId: p.id, day: dayKey() };
+    showToast("+1 " + p.name, true);
+  }
+
+  function hideToast() {
+    el.toast.hidden = true;
+    window.clearTimeout(toastTimer);
+  }
+
+  el.toastUndo.addEventListener("click", function () {
+    if (!lastAction) return hideToast();
+    var p = state.products.filter(function (x) { return x.id === lastAction.productId; })[0];
+    if (p) {
+      var day = lastAction.day;
+      var current = p.counts[day] || 0;
+      if (current > 0) {
+        if (current === 1) delete p.counts[day];
+        else p.counts[day] = current - 1;
+        save();
+      }
+    }
+    lastAction = null;
+    hideToast();
+    renderProducts();
+  });
+
+  /* ---------- add product ---------- */
+
+  el.addForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    // One name, or several separated by commas — "Concealer, Blush, Mascara".
+    var names = el.addName.value.split(/[,\n]/).map(function (n) { return n.trim(); })
+      .filter(function (n) { return n.length; });
+    if (!names.length) return;
+
+    var group = addGroupValue();
+    var existing = {};
+    state.products.forEach(function (p) {
+      if (p.group === group) existing[p.name.toLowerCase()] = true;
+    });
+
+    var added = 0;
+    var skipped = 0;
+    names.forEach(function (name) {
+      var key = name.toLowerCase();
+      if (existing[key]) { skipped++; return; }
+      existing[key] = true;
+      state.products.push({ id: uid(), name: name, group: group, icon: "", counts: {} });
+      added++;
+    });
+    save();
+
+    el.addName.value = "";
+    if (view.tab !== ALL && view.tab !== group) view.tab = group;
+    render();
+    el.addName.focus();
+
+    lastAction = null;
+    if (skipped) {
+      showToast(added + " added, " + skipped + " already in “" + group + "”", false);
+    } else if (added > 1) {
+      showToast(added + " products added to “" + group + "”", false);
+    }
+  });
+
+  el.addGroup.addEventListener("change", function () {
+    if (el.addGroup.value !== NEW_GROUP) {
+      view.addGroup = el.addGroup.value;
+      return;
+    }
+    el.addGroup.value = addGroupValue(); // drop the sentinel straight away
+    openNewGroup(function (name) {
+      if (!name) return; // cancelled: the selection is already back where it was
+      view.addGroup = name;
+      if (view.tab !== ALL) view.tab = name;
+      render();
+      el.addName.focus();
+    });
+  });
+
+  /* ---------- range ---------- */
+
+  el.range.addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-range]");
+    if (!btn) return;
+    view.range = btn.getAttribute("data-range");
+    Array.prototype.forEach.call(el.range.querySelectorAll("button"), function (b) {
+      b.setAttribute("aria-pressed", String(b === btn));
+    });
+    renderProducts();
+  });
+
+  /* ---------- new group dialog ---------- */
+
+  var dlgNewGroup = document.getElementById("dlg-newgroup");
+  var newGroupNameInput = document.getElementById("newgroup-name");
+  var newGroupError = document.getElementById("newgroup-error");
+  var newGroupCallback = null;
+
+  // onDone(name) runs with the new group's name, or null if the user cancelled.
+  function openNewGroup(onDone) {
+    newGroupCallback = onDone || null;
+    newGroupNameInput.value = "";
+    newGroupError.hidden = true;
+    dlgNewGroup.showModal();
+    newGroupNameInput.focus();
+  }
+
+  function createGroupFromDialog() {
+    var name = newGroupNameInput.value.trim();
+    if (!name) return showNewGroupError("Give the group a name.");
+    if (state.groups.indexOf(name) !== -1) return showNewGroupError("“" + name + "” already exists.");
+    state.groups.push(name);
+    save();
+    var done = newGroupCallback;
+    newGroupCallback = null; // so the close handler doesn't report a cancel
+    dlgNewGroup.close();
+    if (done) done(name);
+    else render();
+  }
+
+  function showNewGroupError(msg) {
+    newGroupError.textContent = msg;
+    newGroupError.hidden = false;
+  }
+
+  document.getElementById("newgroup-create").addEventListener("click", createGroupFromDialog);
+
+  newGroupNameInput.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    e.preventDefault(); // otherwise Enter submits the form as a cancel
+    createGroupFromDialog();
+  });
+
+  dlgNewGroup.addEventListener("close", function () {
+    var done = newGroupCallback;
+    newGroupCallback = null;
+    if (done) done(null);
+  });
+
+  /* ---------- groups dialog ---------- */
+
+  var dlgGroups = document.getElementById("dlg-groups");
+  var groupList = document.getElementById("group-list");
+  var newGroupInput = document.getElementById("new-group");
+
+  document.getElementById("btn-groups").addEventListener("click", function () {
+    renderGroupList();
+    dlgGroups.showModal();
+  });
+
+  function renderGroupList() {
+    groupList.textContent = "";
+    state.groups.forEach(function (g) {
+      var row = document.createElement("div");
+      row.className = "group-row";
+
+      var name = document.createElement("span");
+      name.className = "name";
+      name.textContent = g;
+      row.appendChild(name);
+
+      if (g === state.defaultGroup) {
+        var badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = "Default";
+        row.appendChild(badge);
+      } else {
+        var mk = document.createElement("button");
+        mk.type = "button";
+        mk.className = "ghost small";
+        mk.textContent = "Make default";
+        mk.addEventListener("click", function () {
+          state.defaultGroup = g;
+          save();
+          renderGroupList();
+          render();
+        });
+        row.appendChild(mk);
+      }
+
+      var ren = document.createElement("button");
+      ren.type = "button";
+      ren.className = "ghost";
+      ren.textContent = "Rename";
+      ren.addEventListener("click", function () {
+        var next = window.prompt("Rename group", g);
+        if (next === null) return;
+        next = next.trim();
+        if (!next || next === g) return;
+        if (state.groups.indexOf(next) !== -1) {
+          window.alert("A group named “" + next + "” already exists.");
+          return;
+        }
+        renameGroup(g, next);
+        renderGroupList();
+        render();
+      });
+      row.appendChild(ren);
+
+      var del = document.createElement("button");
+      del.type = "button";
+      del.className = "ghost danger";
+      del.textContent = "Delete";
+      del.disabled = state.groups.length <= 1;
+      del.addEventListener("click", function () {
+        var moving = state.products.filter(function (p) { return p.group === g; }).length;
+        var other = state.groups.filter(function (x) { return x !== g; })[0];
+        var msg = moving
+          ? "Delete “" + g + "”? " + moving + (moving === 1 ? " product moves" : " products move") +
+            " to “" + other + "” (counts are kept)."
+          : "Delete “" + g + "”?";
+        if (!window.confirm(msg)) return;
+        deleteGroup(g);
+        renderGroupList();
+        render();
+      });
+      row.appendChild(del);
+
+      groupList.appendChild(row);
+    });
+  }
+
+  function addGroupFromInput() {
+    var name = newGroupInput.value.trim();
+    if (!name) return;
+    if (state.groups.indexOf(name) !== -1) {
+      window.alert("A group named “" + name + "” already exists.");
+      return;
+    }
+    state.groups.push(name);
+    save();
+    newGroupInput.value = "";
+    renderGroupList();
+    render();
+  }
+
+  document.getElementById("add-group-btn").addEventListener("click", addGroupFromInput);
+  newGroupInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addGroupFromInput();
+    }
+  });
+
+  /* ---------- product dialog ---------- */
+
+  var dlgProduct = document.getElementById("dlg-product");
+  var editName = document.getElementById("edit-name");
+  var editIcon = document.getElementById("edit-icon");
+  var editGroup = document.getElementById("edit-group");
+  var editCount = document.getElementById("edit-count");
+  var editing = null;
+
+  function openProductDialog(p) {
+    editing = p;
+    document.getElementById("dlg-product-title").textContent = p.name;
+    editName.value = p.name;
+    editIcon.value = p.icon || "";
+    editIcon.placeholder = guessIcon(p.name) || "Leave empty to pick one for you";
+    renderGroupSelect(editGroup, p.group);
+    editCount.value = String(countFor(p, "all"));
+    dlgProduct.showModal();
+  }
+
+  document.getElementById("edit-save").addEventListener("click", function () {
+    if (!editing) return;
+    var name = editName.value.trim();
+    if (!name) {
+      window.alert("Give the product a name.");
+      return;
+    }
+    editing.name = name;
+    editing.icon = editIcon.value.trim().slice(0, 4);
+    editing.group = editGroup.value;
+    save();
+    editing = null;
+    dlgProduct.close();
+    render();
+  });
+
+  document.getElementById("edit-delete").addEventListener("click", function () {
+    if (!editing) return;
+    if (!window.confirm("Delete “" + editing.name + "” and its tally history?")) return;
+    state.products = state.products.filter(function (p) { return p !== editing; });
+    save();
+    editing = null;
+    lastAction = null;
+    hideToast();
+    dlgProduct.close();
+    render();
+  });
+
+  dlgProduct.addEventListener("close", function () { editing = null; });
+
+  /* ---------- settings dialog ---------- */
+
+  var dlgSettings = document.getElementById("dlg-settings");
+  var defaultGroupSelect = document.getElementById("default-group");
+  var importFile = document.getElementById("import-file");
+
+  document.getElementById("btn-settings").addEventListener("click", function () {
+    renderGroupSelect(defaultGroupSelect, state.defaultGroup);
+    dlgSettings.showModal();
+  });
+
+  defaultGroupSelect.addEventListener("change", function () {
+    if (state.groups.indexOf(defaultGroupSelect.value) === -1) return;
+    state.defaultGroup = defaultGroupSelect.value;
+    save();
+    renderGroupSelect(defaultGroupSelect, state.defaultGroup);
+    render();
+  });
+
+  document.getElementById("btn-export").addEventListener("click", function () {
+    var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "makeup-counter-" + dayKey() + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  });
+
+  document.getElementById("btn-import").addEventListener("click", function () { importFile.click(); });
+
+  importFile.addEventListener("change", function () {
+    var file = importFile.files && importFile.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var parsed;
+      try {
+        parsed = normalize(JSON.parse(String(reader.result)));
+      } catch (err) {
+        window.alert("That file isn’t a valid Makeup Counter export.");
+        return;
+      }
+      if (!window.confirm("Replace your current data with this file?")) return;
+      state = parsed;
+      view.tab = state.defaultGroup;
+      view.addGroup = null;
+      save();
+      renderGroupSelect(defaultGroupSelect, state.defaultGroup);
+      render();
+    };
+    reader.readAsText(file);
+    importFile.value = "";
+  });
+
+  document.getElementById("btn-reset-counts").addEventListener("click", function () {
+    if (!window.confirm("Reset every count to zero? Products and groups are kept.")) return;
+    state.products.forEach(function (p) { p.counts = {}; });
+    lastAction = null;
+    hideToast();
+    save();
+    render();
+  });
+
+  document.getElementById("btn-reset-all").addEventListener("click", function () {
+    if (!window.confirm("Erase all products, groups, and counts?")) return;
+    state = defaults();
+    view.tab = state.defaultGroup;
+    view.addGroup = null;
+    lastAction = null;
+    hideToast();
+    save();
+    renderGroupSelect(defaultGroupSelect, state.defaultGroup);
+    render();
+  });
+
+  /* ---------- boot ---------- */
+
+  view.tab = state.defaultGroup; // open on the default group
+  render();
+
+  // If the app is left open across midnight, "today" counts must roll over.
+  var bootDay = dayKey();
+  window.setInterval(function () {
+    var now = dayKey();
+    if (now !== bootDay) {
+      bootDay = now;
+      lastAction = null;
+      hideToast();
+      renderProducts();
+    }
+  }, 30000);
+})();
+</script>
+</body>
+</html>
