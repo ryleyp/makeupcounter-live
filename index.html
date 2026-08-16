@@ -102,6 +102,8 @@
   }
   .tab[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: transparent; font-weight: 600; }
   .tab .star { font-size: 12px; opacity: .9; }
+  .tab-new { border-style: dashed; color: var(--text-dim); }
+  .err { color: var(--danger); }
 
   /* Range selector */
   .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 14px; }
@@ -217,7 +219,8 @@
   <nav class="tabs" id="tabs" aria-label="Product groups"></nav>
 
   <form class="add" id="add-form" autocomplete="off">
-    <input type="text" id="add-name" placeholder="Add a product&hellip;" aria-label="Product name" maxlength="80" required>
+    <input type="text" id="add-name" placeholder="Product name &mdash; or several, separated by commas"
+           aria-label="Product name" maxlength="300" required>
     <select id="add-group" aria-label="Group"></select>
     <button class="primary" type="submit">Add</button>
   </form>
@@ -256,6 +259,22 @@
     </div>
     <div class="dlg-actions">
       <button value="close">Done</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- New group dialog -->
+<dialog id="dlg-newgroup">
+  <form method="dialog" class="dlg-body">
+    <h2>New group</h2>
+    <div class="field">
+      <label for="newgroup-name">Group name</label>
+      <input type="text" id="newgroup-name" maxlength="40" placeholder="e.g. Daily drivers">
+      <span class="small err" id="newgroup-error" hidden></span>
+    </div>
+    <div class="dlg-actions">
+      <button value="cancel" class="ghost">Cancel</button>
+      <button type="button" class="primary" id="newgroup-create">Create</button>
     </div>
   </form>
 </dialog>
@@ -322,20 +341,21 @@
 
   var STORAGE_KEY = "makeup-counter-v1";
   var ALL = " all"; // sentinel tab id, cannot collide with a group name
+  var NEW_GROUP = " new"; // sentinel <option> value for "create a group"
   var UNDO_MS = 6000;
 
   /* ---------- state ---------- */
 
   var state = load();
-  var view = { range: "today", tab: null };
+  var view = { range: "today", tab: null, addGroup: null };
   var lastAction = null;
   var toastTimer = null;
 
   function defaults() {
     return {
       version: 1,
-      groups: ["Face", "Eyes", "Lips", "Skincare"],
-      defaultGroup: "Face",
+      groups: ["Daily drivers", "Occasional"],
+      defaultGroup: "Daily drivers",
       products: []
     };
   }
@@ -466,6 +486,7 @@
     state.products.forEach(function (p) { if (p.group === oldName) p.group = newName; });
     if (state.defaultGroup === oldName) state.defaultGroup = newName;
     if (view.tab === oldName) view.tab = newName;
+    if (view.addGroup === oldName) view.addGroup = newName;
     save();
   }
 
@@ -476,6 +497,7 @@
     state.products.forEach(function (p) { if (p.group === name) p.group = fallback; });
     if (state.defaultGroup === name) state.defaultGroup = fallback;
     if (view.tab === name) view.tab = fallback;
+    if (view.addGroup === name) view.addGroup = null;
     save();
   }
 
@@ -504,12 +526,18 @@
 
   function render() {
     renderTabs();
-    renderGroupSelect(el.addGroup, currentAddGroup());
+    renderGroupSelect(el.addGroup, addGroupValue(), true);
     renderProducts();
   }
 
   function currentAddGroup() {
     return view.tab === ALL ? state.defaultGroup : view.tab;
+  }
+
+  // Which group the add form is targeting: an explicit pick, else the active tab.
+  function addGroupValue() {
+    if (view.addGroup && state.groups.indexOf(view.addGroup) !== -1) return view.addGroup;
+    return currentAddGroup();
   }
 
   function renderTabs() {
@@ -532,13 +560,31 @@
       }
       b.addEventListener("click", function () {
         view.tab = item.id;
+        view.addGroup = null; // the add form follows the tab again
         render();
       });
       el.tabs.appendChild(b);
     });
+
+    var add = document.createElement("button");
+    add.type = "button";
+    add.className = "tab tab-new";
+    add.id = "tab-new-group";
+    add.textContent = "＋ Group";
+    add.title = "Create a group";
+    add.addEventListener("click", function () {
+      openNewGroup(function (name) {
+        if (!name) return;
+        view.tab = name;
+        view.addGroup = null;
+        render();
+        el.addName.focus();
+      });
+    });
+    el.tabs.appendChild(add);
   }
 
-  function renderGroupSelect(select, selected) {
+  function renderGroupSelect(select, selected, allowNew) {
     select.textContent = "";
     state.groups.forEach(function (g) {
       var opt = document.createElement("option");
@@ -547,6 +593,12 @@
       if (g === selected) opt.selected = true;
       select.appendChild(opt);
     });
+    if (allowNew) {
+      var newOpt = document.createElement("option");
+      newOpt.value = NEW_GROUP;
+      newOpt.textContent = "＋ New group…";
+      select.appendChild(newOpt);
+    }
   }
 
   function renderProducts() {
@@ -644,12 +696,17 @@
 
   /* ---------- toast / undo ---------- */
 
-  function offerUndo(p) {
-    lastAction = { productId: p.id, day: dayKey() };
-    el.toastText.textContent = "+1 " + p.name;
+  function showToast(text, undoable) {
+    el.toastText.textContent = text;
+    el.toastUndo.hidden = !undoable;
     el.toast.hidden = false;
     window.clearTimeout(toastTimer);
     toastTimer = window.setTimeout(hideToast, UNDO_MS);
+  }
+
+  function offerUndo(p) {
+    lastAction = { productId: p.id, day: dayKey() };
+    showToast("+1 " + p.name, true);
   }
 
   function hideToast() {
@@ -678,15 +735,55 @@
 
   el.addForm.addEventListener("submit", function (e) {
     e.preventDefault();
-    var name = el.addName.value.trim();
-    if (!name) return;
-    var group = el.addGroup.value || state.defaultGroup;
-    state.products.push({ id: uid(), name: name, group: group, counts: {} });
+
+    // One name, or several separated by commas — "Concealer, Blush, Mascara".
+    var names = el.addName.value.split(/[,\n]/).map(function (n) { return n.trim(); })
+      .filter(function (n) { return n.length; });
+    if (!names.length) return;
+
+    var group = addGroupValue();
+    var existing = {};
+    state.products.forEach(function (p) {
+      if (p.group === group) existing[p.name.toLowerCase()] = true;
+    });
+
+    var added = 0;
+    var skipped = 0;
+    names.forEach(function (name) {
+      var key = name.toLowerCase();
+      if (existing[key]) { skipped++; return; }
+      existing[key] = true;
+      state.products.push({ id: uid(), name: name, group: group, counts: {} });
+      added++;
+    });
     save();
+
     el.addName.value = "";
     if (view.tab !== ALL && view.tab !== group) view.tab = group;
     render();
     el.addName.focus();
+
+    lastAction = null;
+    if (skipped) {
+      showToast(added + " added, " + skipped + " already in “" + group + "”", false);
+    } else if (added > 1) {
+      showToast(added + " products added to “" + group + "”", false);
+    }
+  });
+
+  el.addGroup.addEventListener("change", function () {
+    if (el.addGroup.value !== NEW_GROUP) {
+      view.addGroup = el.addGroup.value;
+      return;
+    }
+    el.addGroup.value = addGroupValue(); // drop the sentinel straight away
+    openNewGroup(function (name) {
+      if (!name) return; // cancelled: the selection is already back where it was
+      view.addGroup = name;
+      if (view.tab !== ALL) view.tab = name;
+      render();
+      el.addName.focus();
+    });
   });
 
   /* ---------- range ---------- */
@@ -699,6 +796,54 @@
       b.setAttribute("aria-pressed", String(b === btn));
     });
     renderProducts();
+  });
+
+  /* ---------- new group dialog ---------- */
+
+  var dlgNewGroup = document.getElementById("dlg-newgroup");
+  var newGroupNameInput = document.getElementById("newgroup-name");
+  var newGroupError = document.getElementById("newgroup-error");
+  var newGroupCallback = null;
+
+  // onDone(name) runs with the new group's name, or null if the user cancelled.
+  function openNewGroup(onDone) {
+    newGroupCallback = onDone || null;
+    newGroupNameInput.value = "";
+    newGroupError.hidden = true;
+    dlgNewGroup.showModal();
+    newGroupNameInput.focus();
+  }
+
+  function createGroupFromDialog() {
+    var name = newGroupNameInput.value.trim();
+    if (!name) return showNewGroupError("Give the group a name.");
+    if (state.groups.indexOf(name) !== -1) return showNewGroupError("“" + name + "” already exists.");
+    state.groups.push(name);
+    save();
+    var done = newGroupCallback;
+    newGroupCallback = null; // so the close handler doesn't report a cancel
+    dlgNewGroup.close();
+    if (done) done(name);
+    else render();
+  }
+
+  function showNewGroupError(msg) {
+    newGroupError.textContent = msg;
+    newGroupError.hidden = false;
+  }
+
+  document.getElementById("newgroup-create").addEventListener("click", createGroupFromDialog);
+
+  newGroupNameInput.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    e.preventDefault(); // otherwise Enter submits the form as a cancel
+    createGroupFromDialog();
+  });
+
+  dlgNewGroup.addEventListener("close", function () {
+    var done = newGroupCallback;
+    newGroupCallback = null;
+    if (done) done(null);
   });
 
   /* ---------- groups dialog ---------- */
@@ -900,6 +1045,7 @@
       if (!window.confirm("Replace your current data with this file?")) return;
       state = parsed;
       view.tab = state.defaultGroup;
+      view.addGroup = null;
       save();
       renderGroupSelect(defaultGroupSelect, state.defaultGroup);
       render();
@@ -921,6 +1067,7 @@
     if (!window.confirm("Erase all products, groups, and counts?")) return;
     state = defaults();
     view.tab = state.defaultGroup;
+    view.addGroup = null;
     lastAction = null;
     hideToast();
     save();

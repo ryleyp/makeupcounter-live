@@ -10,8 +10,14 @@ nothing is uploaded anywhere.
 
 - **Tally a use** — one tap on `+1` per use, `−` to correct a miscount, and an
   **Undo** toast for the last tap.
-- **Groups** — organize products into groups (starts with Face, Eyes, Lips,
-  Skincare) and filter by group with the tabs, or see everything under **All**.
+- **Enter products** — type a name and hit Add, or enter several at once
+  separated by commas (`Concealer, Cream blush, Mascara`). Names that already
+  exist in that group are skipped rather than duplicated.
+- **Groups** — organize products into groups like "Daily drivers" and filter by
+  group with the tabs, or see everything under **All**. Create a group from the
+  dashed **＋ Group** tab, from **＋ New group…** in the add form's group picker,
+  or in the **Groups** dialog. A fresh install starts with Daily drivers and
+  Occasional; rename or delete them freely.
 - **Default group** — starred in the tabs. The app opens on it, and it's the
   group preselected in the add form when you're on the **All** tab. Change it in
   **⚙ Settings → Default group**, or in **Groups → Make default**.
