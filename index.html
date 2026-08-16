@@ -113,7 +113,8 @@
   .toolbar .spacer { flex: 1; }
 
   /* Add form */
-  form.add { display: flex; gap: 8px; margin-bottom: 16px; }
+  form.add { display: flex; gap: 8px; margin-bottom: 6px; }
+  .add-hint { margin: 0 0 14px 2px; }
   form.add input[type="text"] { flex: 1; }
   form.add select { max-width: 40%; }
 
@@ -219,11 +220,12 @@
   <nav class="tabs" id="tabs" aria-label="Product groups"></nav>
 
   <form class="add" id="add-form" autocomplete="off">
-    <input type="text" id="add-name" placeholder="Product name &mdash; or several, separated by commas"
-           aria-label="Product name" maxlength="300" required>
+    <input type="text" id="add-name" placeholder="Product name" aria-label="Product name"
+           aria-describedby="add-hint" maxlength="300" required>
     <select id="add-group" aria-label="Group"></select>
     <button class="primary" type="submit">Add</button>
   </form>
+  <p class="small muted add-hint" id="add-hint">Adding several? Separate them with commas.</p>
 
   <div class="toolbar">
     <div class="seg" id="range" role="group" aria-label="Count range">
