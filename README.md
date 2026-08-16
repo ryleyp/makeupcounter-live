@@ -23,11 +23,17 @@ nothing is uploaded anywhere.
   **⚙ Settings → Default group**, or in **Groups → Make default**.
 - **Time ranges** — see counts for today, the last 7 days, the last 30 days, or
   all time. Products sort most-used-first for whichever range you pick.
+- **Icons** — each product gets an emoji guessed from its name (lip balm → 💋,
+  blush → 🌸), or a pastel letter badge if nothing matches. Set your own in the
+  product's `⋯` menu.
 - **Manage** — rename products, move them between groups, or delete them via the
   `⋯` button. Rename, add, and delete groups in the **Groups** dialog; deleting a
   group moves its products to another group rather than losing their counts.
 - **Export / import** — download your data as JSON and load it back on another
   device or browser.
+
+The interface is soft pink and lilac, follows your system's light or dark mode,
+and honours `prefers-reduced-motion` if you'd rather skip the animations.
 
 ## How counts are stored
 
